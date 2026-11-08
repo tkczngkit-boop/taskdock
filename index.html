@@ -230,6 +230,16 @@ main{max-width:1100px;margin:0 auto;padding:20px 20px 40px}
 .plan b{display:block;font-size:22px;font-weight:800;letter-spacing:-.02em}
 .plan span{font-size:11px;color:var(--gray-500)}
 .advice{background:var(--pri-50);border-radius:8px;padding:10px 12px;font-size:13px}
+.res{width:100%;border-collapse:collapse;font-size:12px}
+.res th{text-align:left;font-weight:600;color:var(--gray-500);font-size:11px;padding:4px 6px;border-bottom:1px solid var(--gray-100)}
+.res td{padding:6px;border-bottom:1px solid var(--gray-100);white-space:nowrap}
+.res td.r,.res th.r{text-align:right}
+.res td b{font-weight:700}
+.res tr:last-child td{border-bottom:none}
+.pj.click{cursor:pointer;transition:.15s ease}
+.pj.click:hover{border-color:var(--gray-300);background:var(--gray-50)}
+.yen{display:flex;align-items:center;gap:6px}
+.yen input{width:140px;text-align:right}
 
 /* ---------- settings ---------- */
 .set-list{display:flex;flex-direction:column}
@@ -409,8 +419,23 @@ class LocalStore {
     return {
       tasks: LS.get('tasks', []), notes: LS.get('notes', []), projects: LS.get('projects', []),
       workTypes: LS.get('work_types', []), settings: LS.get('settings', {}), members: LS.get('members', []),
-      reviews: LS.get('reviews', []), repeatRules: LS.get('repeat_rules', [])
+      reviews: LS.get('reviews', []), repeatRules: LS.get('repeat_rules', []), revenues: LS.get('revenues', [])
     };
+  }
+  async upsertRevenue(row) {
+    const a = LS.get('revenues', []); const i = a.findIndex(x => x.project_id === row.project_id && x.year_month === row.year_month);
+    if (i >= 0) { a[i] = { ...a[i], ...row }; LS.set('revenues', a); return a[i]; }
+    row.id = row.id || uid(); a.push(row); LS.set('revenues', a); return row;
+  }
+  async projectHours(ym) {
+    const map = new Map();
+    for (const t of LS.get('tasks', [])) {
+      if (t.status !== 'completed' || !t.scheduled_date || t.scheduled_date.slice(0, 7) !== ym) continue;
+      const k = t.project_id || null; const h = Number(t.actual_hours ?? t.estimated_hours) || 0;
+      const cur = map.get(k) || { project_id: k, hours: 0, cnt: 0, my_hours: 0 };
+      cur.hours += h; cur.cnt++; cur.my_hours += h; map.set(k, cur);
+    }
+    return [...map.values()];
   }
   async insert(t, row) { const a = LS.get(t, []); a.push(row); LS.set(t, a); return row; }
   async update(t, id, patch) { const a = LS.get(t, []); const i = a.findIndex(x => x.id === id); if (i >= 0) { a[i] = { ...a[i], ...patch }; LS.set(t, a); return a[i]; } }
@@ -445,15 +470,17 @@ class SupabaseStore {
   }
   async loadAll() {
     const q = (t, order) => this.sb.from(t).select('*').order(order || 'created_at', { ascending: true });
-    const [t, n, p, w, s, m, r, rr] = await Promise.all([
+    const [t, n, p, w, s, m, r, rr, rv] = await Promise.all([
       q('tasks'), this.sb.from('notes').select('*').order('updated_at', { ascending: false }),
       q('projects', 'sort'), q('work_types', 'sort'), this.sb.from('settings').select('*'), q('members'),
-      q('reviews', 'date'), q('repeat_rules')
+      q('reviews', 'date'), q('repeat_rules'), q('revenues', 'year_month')
     ]);
-    for (const x of [t, n, p, w, s, m, r, rr]) if (x.error) throw x.error;
+    for (const x of [t, n, p, w, s, m, r, rr, rv]) if (x.error) throw x.error;
     const settings = {}; for (const row of s.data) settings[row.key] = row.value;
-    return { tasks: t.data, notes: n.data, projects: p.data, workTypes: w.data, settings, members: m.data, reviews: r.data, repeatRules: rr.data };
+    return { tasks: t.data, notes: n.data, projects: p.data, workTypes: w.data, settings, members: m.data, reviews: r.data, repeatRules: rr.data, revenues: rv.data };
   }
+  async upsertRevenue(row) { const { id, ...r } = row; const { data, error } = await this.sb.from('revenues').upsert(r, { onConflict: 'project_id,year_month' }).select().single(); if (error) throw error; return data; }
+  async projectHours(ym) { const { data, error } = await this.sb.rpc('project_hours', { ym }); if (error) throw error; return data || []; }
   async insert(t, row) { const { data, error } = await this.sb.from(t).insert(row).select().single(); if (error) throw error; return data; }
   async update(t, id, patch) { const { data, error } = await this.sb.from(t).update(patch).eq('id', id).select().single(); if (error) throw error; return data; }
   async remove(t, id) { const { error } = await this.sb.from(t).delete().eq('id', id); if (error) throw error; }
@@ -474,11 +501,15 @@ class SupabaseStore {
    アプリ状態
    ===================================================================== */
 const S = {
-  store: null, me: null, members: [], tasks: [], notes: [], projects: [], workTypes: [], settings: {}, reviews: [], repeatRules: [],
+  store: null, me: null, members: [], tasks: [], notes: [], projects: [], workTypes: [], settings: {}, reviews: [], repeatRules: [], revenues: [],
   tab: LS.get('tab', 'tasks'), filter: LS.get('filter', 'all'), collapsed: LS.get('collapsed', {}),
   privateSummary: [], ready: false, authState: 'loading', openNote: null,
-  calMonth: todayStr().slice(0, 7), calSelected: null
+  calMonth: todayStr().slice(0, 7), calSelected: null, revMonth: todayStr().slice(0, 7)
 };
+const fmtYen = n => '¥' + Math.round(Number(n) || 0).toLocaleString('ja-JP');
+const fmtYm = ym => { const [y, m] = ym.split('-').map(Number); return `${y}年 ${m}月`; };
+const addMonths = (ym, n) => { const [y, m] = ym.split('-').map(Number); const d = new Date(y, m - 1 + n, 1); return toYMD(d).slice(0, 7); };
+const revenueOf = (pid, ym) => Number(S.revenues.find(r => r.project_id === pid && r.year_month === ym)?.amount) || 0;
 const DEFAULT_CFG = { url: 'https://txzhyummevuplrqjagsz.supabase.co', key: 'sb_publishable_hYiMXs-oXEMes62oFLeb1g_HJeWZwus' };
 const CFG = LS.get('supabase', DEFAULT_CFG);
 
@@ -1230,7 +1261,7 @@ function renderReview(m) {
   const pjCards = S.projects.filter(p => !p.archived).map(p => {
     const pt = monthTasks.filter(t => t.project_id === p.id); const pd = pt.filter(t => t.status === 'completed');
     const ph = pd.reduce((a, t) => a + taskHours(t), 0); const rate = pt.length ? Math.round(pd.length / pt.length * 100) : 0;
-    return `<div class="pj"><div class="t"><i style="background:${esc(p.color)}"></i>${esc(p.name)}<span>${fmtH(ph)}</span></div><div class="m">完了 ${pd.length}/${pt.length} 件 ・ ${rate}%</div><div class="bar"><i style="width:${rate}%"></i></div></div>`;
+    return `<div class="pj click" data-pj="${p.id}" title="リザルトを見る"><div class="t"><i style="background:${esc(p.color)}"></i>${esc(p.name)}<span>${fmtH(ph)}</span></div><div class="m">完了 ${pd.length}/${pt.length} 件 ・ ${rate}%</div><div class="bar"><i style="width:${rate}%"></i></div></div>`;
   }).join('');
 
   m.innerHTML = `
@@ -1242,6 +1273,7 @@ function renderReview(m) {
         <span class="sp"></span>
         <span class="muted">実績 ${fmtH(monthH)} ・ 完了 ${monthDone.length} 件</span>
         <button class="btn ghost sm" id="cal-today">今日</button>
+        <button class="btn out sm" id="cal-result">リザルト</button>
       </div>
       <div class="cal-wd">${WD.map(w => `<span>${w}</span>`).join('')}</div>
       <div class="cal" id="cal">${cells.join('')}</div>
@@ -1250,14 +1282,55 @@ function renderReview(m) {
     <div class="card">
       <h3>プロジェクト <span class="cnt">${y}年 ${mo}月</span></h3>
       ${pjCards ? `<div class="pj-grid">${pjCards}</div>` : '<div class="empty">プロジェクトがありません</div>'}
-      <p class="muted" style="margin:10px 0 0">売上の入力と時給のリザルトは Phase 3 で追加します。</p>
+      <p class="muted" style="margin:10px 0 0">カードを押すとそのプロジェクトのリザルト（時給）が見られます。売上は Settings → 売上 で入力。</p>
     </div>`;
 
   const shift = n => { const d = new Date(y, mo - 1 + n, 1); S.calMonth = toYMD(d).slice(0, 7); render(); };
   $('#cal-prev').onclick = () => shift(-1); $('#cal-next').onclick = () => shift(1);
+  $('#cal-result').onclick = () => openResultModal(S.calMonth, null);
+  $$('.pj[data-pj]').forEach(c => c.onclick = () => openResultModal(S.calMonth, c.dataset.pj));
   $('#cal-today').onclick = () => { S.calMonth = today.slice(0, 7); S.calSelected = today; render(); };
   $$('#cal .c').forEach(c => c.onclick = () => { S.calSelected = S.calSelected === c.dataset.d ? null : c.dataset.d; render(); });
   if (S.calSelected) bindDayDetail(S.calSelected);
+}
+
+/* ---------- リザルト（時給） ---------- */
+async function openResultModal(ym, projectId) {
+  openModal(`${fmtYm(ym)} のリザルト`, `<div class="placeholder">集計中…</div>`, [{ label: '閉じる', cls: 'out', onClick: closeModal }]);
+  let rows;
+  try { rows = await S.store.projectHours(ym); } catch (e) { fail(e); closeModal(); return; }
+  const hoursOf = pid => rows.find(r => (r.project_id || null) === pid) || { hours: 0, cnt: 0, my_hours: 0 };
+  const projs = S.projects.filter(p => !p.archived || revenueOf(p.id, ym) || hoursOf(p.id).hours);
+  const totalRev = projs.reduce((a, p) => a + revenueOf(p.id, ym), 0);
+  const totalH = rows.reduce((a, r) => a + Number(r.hours), 0);
+  const myH = rows.reduce((a, r) => a + Number(r.my_hours), 0);
+  const rate = (rev, h) => h > 0 && rev > 0 ? fmtYen(rev / h) : '—';
+  const other = hoursOf(null);
+  let body = `
+    <div class="rv-h">全体の時給</div>
+    <div class="score"><b>${rate(totalRev, totalH)}</b><span>/ 時間</span></div>
+    <div class="muted">売上 ${fmtYen(totalRev)} ÷ ${fmtH(totalH)}（うち自分 ${fmtH(myH)}）</div>
+    <div class="rv-h" style="margin-top:8px">プロジェクト別</div>
+    <table class="res"><tr><th>プロジェクト</th><th class="r">売上</th><th class="r">時間</th><th class="r">時給</th></tr>
+      ${projs.map(p => { const h = hoursOf(p.id); const rev = revenueOf(p.id, ym); return `<tr><td><span class="chip" style="background:${hex20(p.color)};color:${esc(p.color)}">${esc(p.name)}</span></td><td class="r">${rev ? fmtYen(rev) : '<span class="muted">未入力</span>'}</td><td class="r">${fmtH(h.hours)}</td><td class="r"><b>${rate(rev, Number(h.hours))}</b></td></tr>`; }).join('')}
+      ${other.hours ? `<tr><td class="muted">プロジェクトなし</td><td class="r">—</td><td class="r">${fmtH(other.hours)}</td><td class="r">—</td></tr>` : ''}
+    </table>`;
+  if (projectId) {
+    const p = projectById(projectId);
+    const months = [0, -1, -2, -3, -4, -5].map(n => addMonths(ym, n));
+    let hist = [];
+    try { hist = await Promise.all(months.map(m => S.store.projectHours(m))); } catch (e) { console.error(e); }
+    body += `<div class="rv-h" style="margin-top:8px">${esc(p?.name || '')} の推移（直近 6 か月）</div>
+      <table class="res"><tr><th>月</th><th class="r">売上</th><th class="r">時間</th><th class="r">時給</th></tr>
+      ${months.map((m, i) => { const h = Number((hist[i] || []).find(r => r.project_id === projectId)?.hours || 0); const rev = revenueOf(projectId, m); return `<tr><td>${fmtYm(m)}</td><td class="r">${rev ? fmtYen(rev) : '<span class="muted">—</span>'}</td><td class="r">${fmtH(h)}</td><td class="r"><b>${rate(rev, h)}</b></td></tr>`; }).join('')}
+      </table>`;
+  }
+  body += `<div class="muted">時間はメンバー全員の完了タスクの実績時間（個人タスクは合計だけ）。売上は月単位の手入力です。</div>`;
+  openModal(`${fmtYm(ym)} のリザルト`, body, [
+    { label: '売上を入力', cls: 'ghost', onClick: () => { closeModal(); S.revMonth = ym; S.tab = 'settings'; LS.set('tab', 'settings'); render(); setTimeout(() => $('#rev-card')?.scrollIntoView({ behavior: 'smooth' }), 50); } },
+    { spacer: true },
+    { label: '閉じる', cls: 'pri', onClick: closeModal }
+  ]);
 }
 
 function renderDayDetail(date, list) {
@@ -1345,6 +1418,13 @@ function renderSettings(m) {
     <div class="set-add"><input type="text" id="wt-name" placeholder="新しい作業種類"><input type="color" id="wt-color" value="#787672"><button class="btn pri" id="wt-add">追加</button></div>
   </div>
 
+  <div class="card" id="rev-card">
+    <h3>売上 <span class="cnt">時給のリザルトに使います</span></h3>
+    <div class="field" style="max-width:220px;margin-bottom:10px"><label>月</label><select id="rev-month">${[...Array(13)].map((_, i) => addMonths(todayStr().slice(0, 7), 1 - i)).map(m => `<option value="${m}" ${m === S.revMonth ? 'selected' : ''}>${fmtYm(m)}</option>`).join('')}</select></div>
+    <div class="set-list">${S.projects.filter(p => !p.archived).map(p => `<div class="set-item"><span class="dot" style="background:${esc(p.color)}"></span><span class="nm">${esc(p.name)}</span><span class="yen"><input type="number" min="0" step="1000" data-rev="${p.id}" value="${revenueOf(p.id, S.revMonth) || ''}" placeholder="0"><span class="muted">円</span></span></div>`).join('') || '<p class="muted" style="margin:0">プロジェクトがありません</p>'}</div>
+    <p class="muted" style="margin:8px 0 0">月ごとの売上を入れると、Review タブの「リザルト」で時給に変わります。入金ベースでも確定ベースでも、二人で決めた方で。</p>
+  </div>
+
   <div class="card">
     <h3>繰り返しタスク <span class="cnt">${myRules.length}</span></h3>
     ${myRules.length ? `<div class="set-list">${myRules.map(r => `<div class="set-item"><span class="rep" style="color:var(--gray-400)">↻</span><span class="nm">${esc(r.template?.title || '')} <span class="sub">${esc(ruleLabel(r))}${r.end_date ? ` ・ ${r.end_date} まで` : ''} ・ ${fmtH(r.template?.estimated_hours || 1)}${r.template?.visibility === 'shared' ? ' ・ 共有' : ''}</span></span><button class="x" data-rd="${r.id}" title="解除">${ICON.x}</button></div>`).join('')}</div>` : '<p class="muted" style="margin:0">まだありません。タスクの編集画面か、追加欄の「繰り返し」から作れます。</p>'}
@@ -1403,6 +1483,13 @@ function renderSettings(m) {
     const w = wtById(b.dataset.wd); if (!confirm(`「${w.label}」を削除しますか？`)) return;
     S.workTypes = S.workTypes.filter(x => x.id !== w.id); S.tasks.forEach(t => { if (t.work_type_id === w.id) t.work_type_id = null; }); render();
     try { await S.store.remove('work_types', w.id); } catch (e) { fail(e); reload(false); }
+  });
+
+  $('#rev-month').onchange = () => { S.revMonth = $('#rev-month').value; render(); setTimeout(() => $('#rev-card')?.scrollIntoView(), 0); };
+  $$('[data-rev]').forEach(i => i.onchange = async () => {
+    const pid = i.dataset.rev; const amount = Math.max(0, Number(i.value) || 0);
+    const row = { project_id: pid, year_month: S.revMonth, amount };
+    try { const saved = await S.store.upsertRevenue(row); S.revenues = S.revenues.filter(r => !(r.project_id === pid && r.year_month === S.revMonth)); S.revenues.push(saved || row); toast('保存しました', { ms: 1500 }); } catch (e) { fail(e); }
   });
 
   $$('[data-rd]').forEach(b => b.onclick = async () => {

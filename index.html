@@ -1,0 +1,1038 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fbfbfa">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="TASKDOCK">
+<meta name="mobile-web-app-capable" content="yes">
+<title>TASKDOCK</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2337352f'/%3E%3Cpath d='M18 24h28M18 32h20M18 40h14' stroke='%23fff' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --bg:#fafaf9; --ink:#37352f; --ink-soft:#787672;
+  --pri-50:#f7f6f3; --pri-100:#ebeae6; --pri-500:#37352f; --pri-600:#2f2d27;
+  --gray-50:#fbfbfa; --gray-100:#f3f2ef; --gray-200:#ebeae6; --gray-300:#dcdad5; --gray-400:#b8b6b0;
+  --gray-500:#9b9a95; --gray-600:#787672; --gray-700:#5a5956;
+  --green-500:#68886e; --green-600:#4f6e56; --red-500:#b5544d; --amber-500:#a88f5c;
+  --border:rgba(55,53,47,.09);
+  --shadow-sm:0 1px 2px rgba(15,15,15,.03);
+  --shadow-md:0 1px 2px rgba(15,15,15,.02),0 2px 8px -2px rgba(15,15,15,.04);
+  --shadow-lg:0 0 0 1px rgba(15,15,15,.04),0 8px 30px -4px rgba(15,15,15,.14);
+  --hdr:56px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--gray-50);color:var(--ink);line-height:1.5;font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',sans-serif;font-size:14px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none;padding:0}
+input,select,textarea{background:#fff;border:1px solid var(--border);border-radius:7px;padding:7px 10px;outline:none;transition:.15s ease;width:100%;font-size:13px}
+input:focus,select:focus,textarea:focus{border-color:var(--gray-400);box-shadow:0 0 0 3px rgba(55,53,47,.06)}
+select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5l3 3 3-3' fill='none' stroke='%239b9a95' stroke-width='1.4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;padding-right:26px}
+input[type=date],input[type=time]{min-height:34px}
+textarea{resize:vertical;min-height:64px}
+a{color:inherit}
+.hidden{display:none!important}
+
+/* ---------- header ---------- */
+.hdr{position:sticky;top:0;z-index:40;height:var(--hdr);background:rgba(251,251,250,.82);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);border-bottom:1px solid var(--border)}
+.hdr-in{max-width:1100px;margin:0 auto;height:100%;padding:0 20px;display:flex;align-items:center;gap:12px}
+.logo{font-weight:800;letter-spacing:.04em;font-size:14px;display:flex;align-items:center;gap:8px}
+.logo .v{font-size:10px;font-weight:600;color:var(--gray-500);background:var(--gray-100);padding:1px 6px;border-radius:4px;letter-spacing:0}
+.nav{display:flex;gap:2px;margin-left:auto}
+.nav button{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:7px;font-size:13px;font-weight:500;color:var(--gray-500);transition:.15s ease}
+.nav button:hover{background:var(--gray-100);color:var(--ink)}
+.nav button.on{background:var(--gray-100);color:var(--ink);font-weight:600}
+.nav svg{width:15px;height:15px}
+.me{width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;overflow:hidden;flex-shrink:0;margin-left:6px}
+.me img{width:100%;height:100%;object-fit:cover}
+
+main{max-width:1100px;margin:0 auto;padding:20px 20px 40px}
+
+/* ---------- cards & buttons ---------- */
+.card{background:#fff;border-radius:10px;border:1px solid var(--border);box-shadow:var(--shadow-sm);padding:16px;margin-bottom:12px}
+.card h3{margin:0 0 10px;font-size:13px;font-weight:600;color:var(--gray-700);display:flex;align-items:center;gap:8px}
+.card h3 .cnt{margin-left:auto;font-size:11px;font-weight:500;color:var(--gray-500)}
+.btn{border-radius:7px;font-size:13px;font-weight:500;padding:7px 14px;transition:.15s ease;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;line-height:1.3}
+.btn.pri{background:var(--ink);color:#fff}
+.btn.pri:hover{background:var(--pri-600)}
+.btn.out{background:#fff;color:var(--gray-700);border:1px solid var(--border)}
+.btn.out:hover{background:var(--gray-100)}
+.btn.ghost{color:var(--gray-600)}
+.btn.ghost:hover{background:var(--gray-100);color:var(--ink)}
+.btn.danger{background:#fff;color:var(--red-500);border:1px solid rgba(181,84,77,.3)}
+.btn.danger:hover{background:rgba(181,84,77,.06)}
+.btn.sm{padding:4px 10px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:default}
+.seg{display:inline-flex;background:var(--gray-100);border-radius:7px;padding:2px;gap:2px}
+.seg button{padding:4px 10px;border-radius:5px;font-size:12px;font-weight:500;color:var(--gray-500);transition:.15s ease}
+.seg button.on{background:#fff;color:var(--ink);font-weight:600;box-shadow:var(--shadow-sm)}
+.seg button:hover:not(.on){color:var(--ink)}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:11px;font-weight:600;color:var(--gray-500)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.muted{color:var(--gray-500);font-size:12px}
+.row-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.toggle{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;user-select:none}
+.toggle .sw{width:32px;height:18px;border-radius:9px;background:var(--gray-300);position:relative;transition:.15s ease;flex-shrink:0}
+.toggle .sw::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.15s ease;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.toggle.on .sw{background:var(--ink)}
+.toggle.on .sw::after{left:16px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;border-radius:4px;padding:2px 6px;font-weight:600;white-space:nowrap;line-height:1.4}
+
+/* ---------- tasks layout ---------- */
+.tasks-grid{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,3fr);gap:24px;align-items:start}
+.topbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+
+.hero .d1{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hero h2{margin:0;font-size:17px;font-weight:700}
+.hero .d2{margin-top:4px;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.hero .big{font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.hero .of{font-size:14px;font-weight:500;color:var(--gray-500)}
+.hero .pct{font-size:14px;font-weight:600;color:var(--gray-600)}
+.hero .d3{margin-top:4px;font-size:12px;color:var(--gray-500)}
+.hero .bar{margin-top:8px;height:6px;background:var(--gray-200);border-radius:3px;overflow:hidden}
+.hero .bar i{display:block;height:100%;background:var(--ink);border-radius:3px;transition:width .3s ease}
+.hero .others{margin-top:10px;padding-top:10px;border-top:1px solid var(--gray-100);display:flex;flex-direction:column;gap:4px}
+.hero .other{font-size:12px;color:var(--gray-500);display:flex;align-items:center;gap:6px}
+.hero .other b{color:var(--gray-700);font-weight:600}
+.av{width:18px;height:18px;border-radius:50%;background:var(--gray-200);color:var(--gray-700);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;overflow:hidden;flex-shrink:0}
+.av img{width:100%;height:100%;object-fit:cover}
+
+.qa{padding:10px 12px}
+.qa .line{display:flex;align-items:center;gap:10px}
+.qa .plus{width:28px;height:28px;border-radius:50%;background:var(--pri-50);color:var(--pri-500);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.qa input.t{border:none;outline:none;flex:1;padding:6px 0;background:transparent;box-shadow:none;font-size:14px;min-width:0}
+.qa input.t:focus{box-shadow:none}
+.qa .more{width:28px;height:28px;border-radius:7px;color:var(--gray-500);display:flex;align-items:center;justify-content:center;transition:.15s ease;flex-shrink:0}
+.qa .more:hover,.qa .more.on{background:var(--gray-100);color:var(--ink)}
+.qa .more svg{transition:.15s ease}
+.qa .more.on svg{transform:rotate(180deg)}
+.qa .ext{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--gray-100);grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.qa .ext.on{display:grid}
+.qa .hint{grid-column:1/-1;font-size:11px;color:var(--gray-400)}
+
+.list{padding:0;overflow:hidden}
+.sec-h{display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:12px;font-weight:600;color:var(--gray-500);cursor:pointer;user-select:none;background:var(--gray-50);border-top:1px solid var(--gray-100);border-bottom:1px solid var(--gray-100)}
+.sec-h:hover{color:var(--ink)}
+.sec-h .n{font-weight:500}
+.sec-h .h{margin-left:auto;font-weight:500}
+.sec-h svg{width:12px;height:12px;transition:.15s ease}
+.sec-h.closed svg{transform:rotate(-90deg)}
+.sec-h.today{background:#fff;border-top:none;color:var(--gray-700)}
+.sec-body.closed{display:none}
+.empty{padding:22px 14px;text-align:center;color:var(--gray-400);font-size:12px}
+
+.row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--gray-100);transition:background .15s ease;animation:fade .2s ease}
+.row:last-child{border-bottom:none}
+.row:hover{background:var(--gray-50)}
+@keyframes fade{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:none}}
+.row .grip{color:var(--gray-300);cursor:grab;font-size:12px;letter-spacing:-2px;flex-shrink:0;line-height:1}
+.row .chk{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--gray-300);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:.15s ease;background:#fff}
+.row .chk:hover{border-color:var(--gray-500)}
+.row .chk svg{width:10px;height:10px;opacity:0}
+.row.done .chk{background:var(--green-500);border-color:var(--green-500)}
+.row.done .chk svg{opacity:1}
+.row .imp{color:var(--red-500);font-weight:800;font-size:13px;flex-shrink:0;width:8px;text-align:center}
+.row .title{flex:1;min-width:0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:text}
+.row.done .title{text-decoration:line-through;color:var(--gray-400)}
+.row .title .st{color:var(--gray-400);font-size:11px;margin-right:6px;font-weight:500}
+.row .tags{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.row .due{font-size:10px;font-weight:600;color:var(--gray-500);white-space:nowrap}
+.row .due.warn{color:var(--amber-500)}
+.row .due.over{color:var(--red-500)}
+.row .carry{font-size:10px;color:var(--gray-400);white-space:nowrap}
+.row .hrs{background:var(--gray-100);color:var(--gray-700);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;flex-shrink:0;cursor:pointer;transition:.15s ease;line-height:1.5}
+.row .hrs:hover{background:var(--gray-200)}
+.row select.hrs-sel{width:auto;padding:2px 22px 2px 8px;font-size:11px;font-weight:700;border-radius:20px;background-color:var(--gray-100);border:none}
+.row .del{width:24px;height:24px;border-radius:6px;color:var(--gray-300);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s ease}
+.row .del:hover{color:var(--red-500);background:rgba(181,84,77,.08)}
+.row .del svg{width:12px;height:12px}
+.row input.inl{padding:2px 6px;font-size:13px;flex:1;min-width:0}
+.chip.sh{background:var(--pri-100);color:var(--gray-700)}
+
+/* ---------- notes ---------- */
+.notes{height:calc(100vh - 90px);position:sticky;top:72px;overflow-y:auto;padding:12px;display:flex;flex-direction:column}
+.notes h3{margin:0 0 10px}
+.notes .add{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.notes .add .r{display:flex;gap:6px;align-items:center}
+.notes .add select{flex:1;min-width:0}
+.note{padding:8px 10px;border:1px solid var(--gray-100);border-radius:8px;margin-bottom:6px;cursor:pointer;transition:.15s ease;background:#fff}
+.note:hover{border-color:var(--gray-300);background:var(--gray-50)}
+.note .p{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.note .m{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:10px;color:var(--gray-400)}
+.note.open{cursor:default;background:#fff;border-color:var(--gray-300)}
+.note.open .p{display:none}
+.note .ed{display:none;flex-direction:column;gap:6px}
+.note.open .ed{display:flex}
+.note .ed textarea{min-height:90px}
+.note .ed .r{display:flex;gap:6px;align-items:center}
+
+/* ---------- settings ---------- */
+.set-list{display:flex;flex-direction:column}
+.set-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--gray-100);font-size:13px}
+.set-item:last-child{border-bottom:none}
+.set-item .dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.set-item .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.set-item .sub{font-size:11px;color:var(--gray-500)}
+.set-item .x{width:24px;height:24px;border-radius:6px;color:var(--gray-300);display:flex;align-items:center;justify-content:center;transition:.15s ease}
+.set-item .x:hover{color:var(--red-500);background:rgba(181,84,77,.08)}
+.set-item .x svg{width:12px;height:12px}
+.set-add{display:flex;gap:8px;margin-top:10px;align-items:center}
+.set-add input[type=text],.set-add input[type=email]{flex:1;min-width:0}
+input[type=color]{width:34px;height:34px;padding:2px;border-radius:7px;flex-shrink:0;cursor:pointer}
+.stat{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+.stat div{font-size:12px;color:var(--gray-500)}
+.stat b{display:block;font-size:20px;font-weight:800;color:var(--ink);letter-spacing:-.02em}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--gray-600)}
+.status i{width:8px;height:8px;border-radius:50%;background:var(--gray-300)}
+.status.ok i{background:var(--green-500)}
+.status.warn i{background:var(--amber-500)}
+
+/* ---------- modal ---------- */
+.ov{position:fixed;inset:0;background:rgba(15,15,15,.35);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadein .15s ease}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.mod{background:#fff;border-radius:12px;box-shadow:var(--shadow-lg);width:100%;max-width:520px;max-height:calc(100vh - 32px);overflow:auto;animation:pop .18s ease}
+@keyframes pop{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}
+.mod .mh{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--gray-100)}
+.mod .mh h2{margin:0;font-size:15px;font-weight:700}
+.mod .mh .x{width:28px;height:28px;border-radius:7px;color:var(--gray-400);display:flex;align-items:center;justify-content:center}
+.mod .mh .x:hover{background:var(--gray-100);color:var(--ink)}
+.mod .mb{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.mod .mf{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--gray-100);align-items:center}
+.mod .mf .sp{flex:1}
+
+/* ---------- toast ---------- */
+.toasts{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{background:var(--ink);color:#fff;font-size:13px;padding:10px 14px;border-radius:9px;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:12px;pointer-events:auto;animation:pop .18s ease;max-width:calc(100vw - 32px)}
+.toast button{color:#fff;font-weight:600;opacity:.85;text-decoration:underline;text-underline-offset:2px}
+.toast.err{background:var(--red-500)}
+
+/* ---------- login ---------- */
+.login{min-height:calc(100vh - var(--hdr));display:flex;align-items:center;justify-content:center;padding:20px}
+.login .card{max-width:360px;width:100%;text-align:center;padding:28px 24px}
+.login .lg{font-weight:800;letter-spacing:.06em;font-size:18px;margin-bottom:4px}
+.login p{color:var(--gray-500);font-size:13px;margin:0 0 18px}
+.login .btn{width:100%;justify-content:center;padding:10px}
+.gicon{width:16px;height:16px}
+
+.placeholder{padding:40px 20px;text-align:center;color:var(--gray-400)}
+.placeholder b{display:block;color:var(--gray-600);font-size:14px;margin-bottom:6px}
+.placeholder ul{list-style:none;padding:0;margin:12px 0 0;font-size:12px;line-height:2}
+
+.bnav{display:none}
+
+/* ---------- responsive ---------- */
+@media (max-width:768px){
+  .nav{display:none}
+  .tasks-grid{grid-template-columns:1fr;gap:16px}
+  .notes{height:auto;position:static;max-height:none}
+  main{padding:16px 16px calc(72px + env(safe-area-inset-bottom))}
+  .hdr-in{padding:0 16px}
+  .bnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(251,251,250,.9);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);border-top:1px solid var(--border);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+  .bnav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;border-radius:8px;font-size:10px;font-weight:500;color:var(--gray-500)}
+  .bnav button.on{color:var(--ink);font-weight:600;background:var(--gray-100)}
+  .bnav svg{width:18px;height:18px}
+  .qa .ext{grid-template-columns:1fr 1fr}
+  .grid2{grid-template-columns:1fr}
+  .row{padding:10px 12px;gap:8px}
+  .row .grip{display:none}
+  .row .tags .chip.wt{display:none}
+  .mod{max-height:calc(100vh - 32px)}
+}
+@media (max-width:420px){
+  .row .tags .chip.pj{max-width:64px;overflow:hidden;text-overflow:ellipsis;display:inline-block}
+  .row .carry{display:none}
+  .hero .big{font-size:26px}
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-in">
+    <div class="logo">TASKDOCK <span class="v">v1 β</span></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="me" id="me" title=""></div>
+  </div>
+</header>
+
+<main id="main"></main>
+<nav class="bnav" id="bnav"></nav>
+<div class="toasts" id="toasts"></div>
+<div id="modal"></div>
+
+<script>
+/* =====================================================================
+   TASKDOCK v1 - Phase 1
+   - 1 ファイル / Vanilla JS
+   - データは Supabase（未接続のときはローカルモードで動く）
+   ===================================================================== */
+'use strict';
+
+/* ---------- 小道具 ---------- */
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); }));
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem('taskdock_' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('taskdock_' + k, JSON.stringify(v)); } catch {} },
+  del(k) { try { localStorage.removeItem('taskdock_' + k); } catch {} }
+};
+const pad = n => String(n).padStart(2, '0');
+const toYMD = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fromYMD = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const todayStr = () => toYMD(new Date());
+const addDays = (s, n) => { const d = fromYMD(s); d.setDate(d.getDate() + n); return toYMD(d); };
+const WD = ['日', '月', '火', '水', '木', '金', '土'];
+const fmtMD = s => { const d = fromYMD(s); return `${d.getMonth() + 1}/${d.getDate()}（${WD[d.getDay()]}）`; };
+const isWeekend = s => { const w = fromYMD(s).getDay(); return w === 0 || w === 6; };
+const diffDays = (a, b) => Math.round((fromYMD(b) - fromYMD(a)) / 86400000);
+const fmtH = h => { h = Number(h) || 0; return (Number.isInteger(h) ? h : h.toFixed(h * 4 % 1 === 0 ? 2 : 1).replace(/\.?0+$/, '')) + 'h'; };
+const HOURS = [0.25, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8];
+const hex20 = c => /^#[0-9a-f]{6}$/i.test(c) ? c + '20' : 'rgba(120,118,114,.12)';
+const initial = n => (n || '?').trim().slice(0, 1).toUpperCase();
+
+const ICON = {
+  tasks: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5h10M3 8h7M3 11.5h5"/></svg>',
+  review: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2.5" y="3" width="11" height="10" rx="2"/><path d="M2.5 6.5h11M5.5 2v2M10.5 2v2"/></svg>',
+  settings: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M3.6 12.4l1.1-1.1M11.3 4.7l1.1-1.1"/></svg>',
+  plus: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 2.5v9M2.5 7h9"/></svg>',
+  check: '<svg viewBox="0 0 10 10" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.2l2.1 2.1L8 3.2"/></svg>',
+  x: '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg>',
+  chev: '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4.5L6 8l3.5-3.5"/></svg>',
+  google: '<svg class="gicon" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.9 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>'
+};
+
+/* ---------- 初期データ ---------- */
+const DEFAULT_PROJECTS = [
+  { name: '居酒屋', color: '#b5544d' },
+  { name: 'YouTube', color: '#a88f5c' },
+  { name: '経理', color: '#68886e' }
+];
+const DEFAULT_WORKTYPES = [
+  { label: 'ミーティング', color: '#f59e0b' },
+  { label: 'YouTube', color: '#ef4444' },
+  { label: '居酒屋', color: '#3b82f6' },
+  { label: '経理', color: '#6366f1' }
+];
+
+/* =====================================================================
+   データ層
+   ===================================================================== */
+class LocalStore {
+  constructor() { this.mode = 'local'; }
+  async init() {
+    let members = LS.get('members', []);
+    if (!members.length) {
+      members = [{ id: uid(), email: 'local@taskdock', name: '自分', avatar_url: null, role: 'owner', weekday_hours: 2.5, weekend_hours: 6 }];
+      LS.set('members', members);
+    }
+    this.me = members[0];
+    return this.me;
+  }
+  async loadAll() {
+    return {
+      tasks: LS.get('tasks', []), notes: LS.get('notes', []), projects: LS.get('projects', []),
+      workTypes: LS.get('work_types', []), settings: LS.get('settings', {}), members: LS.get('members', [])
+    };
+  }
+  async insert(t, row) { const a = LS.get(t, []); a.push(row); LS.set(t, a); return row; }
+  async update(t, id, patch) { const a = LS.get(t, []); const i = a.findIndex(x => x.id === id); if (i >= 0) { a[i] = { ...a[i], ...patch }; LS.set(t, a); return a[i]; } }
+  async remove(t, id) { LS.set(t, LS.get(t, []).filter(x => x.id !== id)); }
+  async setSetting(k, v) { const s = LS.get('settings', {}); s[k] = v; LS.set('settings', s); }
+  async privateSummary() { return []; }
+  async clearAll() { ['tasks', 'notes', 'projects', 'work_types', 'settings', 'members', 'collapsed', 'filter'].forEach(k => LS.del(k)); }
+  onChange(cb) { window.addEventListener('storage', e => { if (e.key && e.key.startsWith('taskdock_') && e.key !== 'taskdock_supabase') cb(); }); }
+}
+
+class SupabaseStore {
+  constructor(url, key) {
+    this.mode = 'supabase';
+    this.sb = window.supabase.createClient(url, key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+  }
+  async session() { const { data } = await this.sb.auth.getSession(); return data.session; }
+  async signIn() {
+    const { error } = await this.sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname } });
+    if (error) throw error;
+  }
+  async signOut() { await this.sb.auth.signOut(); }
+  async init() {
+    const { data, error } = await this.sb.rpc('bootstrap_member');
+    if (error) throw error;
+    this.me = Array.isArray(data) ? data[0] : data;
+    return this.me;
+  }
+  async loadAll() {
+    const q = (t, order) => this.sb.from(t).select('*').order(order || 'created_at', { ascending: true });
+    const [t, n, p, w, s, m] = await Promise.all([
+      q('tasks'), this.sb.from('notes').select('*').order('updated_at', { ascending: false }),
+      q('projects', 'sort'), q('work_types', 'sort'), this.sb.from('settings').select('*'), q('members')
+    ]);
+    for (const r of [t, n, p, w, s, m]) if (r.error) throw r.error;
+    const settings = {}; for (const r of s.data) settings[r.key] = r.value;
+    return { tasks: t.data, notes: n.data, projects: p.data, workTypes: w.data, settings, members: m.data };
+  }
+  async insert(t, row) { const { data, error } = await this.sb.from(t).insert(row).select().single(); if (error) throw error; return data; }
+  async update(t, id, patch) { const { data, error } = await this.sb.from(t).update(patch).eq('id', id).select().single(); if (error) throw error; return data; }
+  async remove(t, id) { const { error } = await this.sb.from(t).delete().eq('id', id); if (error) throw error; }
+  async setSetting(k, v) { const { error } = await this.sb.from('settings').upsert({ key: k, value: v }); if (error) throw error; }
+  async privateSummary(d) { const { data, error } = await this.sb.rpc('private_summary', { d }); if (error) throw error; return data || []; }
+  async clearAll() {
+    for (const t of ['tasks', 'notes']) { const { error } = await this.sb.from(t).delete().neq('id', '00000000-0000-0000-0000-000000000000'); if (error) throw error; }
+  }
+  onChange(cb) {
+    this.sb.channel('taskdock-all')
+      .on('postgres_changes', { event: '*', schema: 'public' }, () => cb())
+      .subscribe();
+  }
+}
+
+/* =====================================================================
+   アプリ状態
+   ===================================================================== */
+const S = {
+  store: null, me: null, members: [], tasks: [], notes: [], projects: [], workTypes: [], settings: {},
+  tab: LS.get('tab', 'tasks'), filter: LS.get('filter', 'all'), collapsed: LS.get('collapsed', {}),
+  privateSummary: [], ready: false, authState: 'loading', openNote: null
+};
+const DEFAULT_CFG = { url: 'https://txzhyummevuplrqjagsz.supabase.co', key: 'sb_publishable_hYiMXs-oXEMes62oFLeb1g_HJeWZwus' };
+const CFG = LS.get('supabase', DEFAULT_CFG);
+
+function toast(msg, { action, onAction, err, ms = 3500 } = {}) {
+  const el = document.createElement('div');
+  el.className = 'toast' + (err ? ' err' : '');
+  el.innerHTML = `<span>${esc(msg)}</span>${action ? `<button>${esc(action)}</button>` : ''}`;
+  if (action) $('button', el).onclick = () => { el.remove(); onAction && onAction(); };
+  $('#toasts').appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = '.2s'; setTimeout(() => el.remove(), 200); }, ms);
+}
+const fail = e => { console.error(e); toast(e?.message || '保存に失敗しました', { err: true }); };
+
+/* ---------- 参照ヘルパー ---------- */
+const memberById = id => S.members.find(m => m.id === id);
+const projectById = id => S.projects.find(p => p.id === id);
+const wtById = id => S.workTypes.find(w => w.id === id);
+const isOwner = () => S.me?.role === 'owner';
+const myBaseline = (date = todayStr()) => Number(isWeekend(date) ? S.me?.weekend_hours : S.me?.weekday_hours) || 0;
+const sharedBaseline = () => Number(S.settings.shared_daily_hours ?? 2) || 0;
+const taskHours = t => Number(t.status === 'completed' ? (t.actual_hours ?? t.estimated_hours) : t.estimated_hours) || 0;
+
+function visibleTasks() {
+  // RLS 済みだが、ローカルモードと念のため二重にフィルタ
+  const mine = S.tasks.filter(t => t.visibility === 'shared' || t.owner_id === S.me.id);
+  if (S.filter === 'shared') return mine.filter(t => t.visibility === 'shared');
+  if (S.filter === 'mine') return mine.filter(t => t.owner_id === S.me.id || t.assignee_id === S.me.id);
+  return mine;
+}
+
+/* =====================================================================
+   起動
+   ===================================================================== */
+async function boot() {
+  renderNav();
+  $('#main').innerHTML = `<div class="placeholder">読み込み中…</div>`;
+  if (CFG.url && CFG.key && window.supabase) {
+    S.store = new SupabaseStore(CFG.url, CFG.key);
+    S.store.sb.auth.onAuthStateChange((ev) => {
+      if (ev === 'SIGNED_OUT') { S.ready = false; S.authState = 'signedout'; renderLogin(); }
+    });
+    let session = null;
+    try { session = await S.store.session(); } catch (e) { console.error(e); }
+    if (!session) { S.authState = 'signedout'; renderLogin(); return; }
+    try { S.me = await S.store.init(); }
+    catch (e) {
+      S.authState = /NOT_A_MEMBER/.test(e.message) ? 'notmember' : 'error';
+      S.authErr = e.message; renderLogin(); return;
+    }
+  } else {
+    S.store = new LocalStore();
+    S.me = await S.store.init();
+  }
+  await reload(true);
+  S.store.onChange(debounce(() => reload(false), 250));
+  S.ready = true;
+  render();
+}
+
+function debounce(fn, ms) { let t; return () => { clearTimeout(t); t = setTimeout(fn, ms); }; }
+
+async function reload(first) {
+  try {
+    const d = await S.store.loadAll();
+    Object.assign(S, d);
+    if (first) await seedDefaults();
+    await carryOver();
+    S.privateSummary = S.members.length > 1 ? await S.store.privateSummary(todayStr()).catch(() => []) : [];
+    if (!first) render();
+  } catch (e) { fail(e); }
+}
+
+async function seedDefaults() {
+  if (S.store.mode === 'supabase' && !isOwner()) return;
+  if (!S.projects.length) {
+    for (const [i, p] of DEFAULT_PROJECTS.entries()) S.projects.push(await S.store.insert('projects', { id: uid(), name: p.name, color: p.color, sort: i, archived: false, created_at: new Date().toISOString() }));
+  }
+  if (!S.workTypes.length) {
+    for (const [i, w] of DEFAULT_WORKTYPES.entries()) S.workTypes.push(await S.store.insert('work_types', { id: uid(), label: w.label, color: w.color, sort: i, created_at: new Date().toISOString() }));
+  }
+  if (S.settings.shared_daily_hours == null) { await S.store.setSetting('shared_daily_hours', 2); S.settings.shared_daily_hours = 2; }
+}
+
+// 終わらなかったタスクは自動で今日へ
+async function carryOver() {
+  const today = todayStr();
+  const late = S.tasks.filter(t => t.status === 'pending' && t.scheduled_date && t.scheduled_date < today && (t.visibility === 'shared' || t.owner_id === S.me.id));
+  for (const t of late) {
+    const patch = { scheduled_date: today, carried_over: (t.carried_over || 0) + 1 };
+    Object.assign(t, patch);
+    try { await S.store.update('tasks', t.id, patch); } catch (e) { console.error(e); }
+  }
+  if (late.length) toast(`${late.length} 件を今日に持ち越しました`);
+}
+
+/* =====================================================================
+   描画
+   ===================================================================== */
+const TABS = [['tasks', 'Tasks', ICON.tasks], ['review', 'Review', ICON.review], ['settings', 'Settings', ICON.settings]];
+function renderNav() {
+  const html = TABS.map(([k, l, i]) => `<button data-tab="${k}" class="${S.tab === k ? 'on' : ''}">${i}<span>${l}</span></button>`).join('');
+  $('#nav').innerHTML = html; $('#bnav').innerHTML = html;
+  $$('#nav button,#bnav button').forEach(b => b.onclick = () => { S.tab = b.dataset.tab; LS.set('tab', S.tab); render(); });
+  const me = $('#me');
+  if (S.me) { me.innerHTML = S.me.avatar_url ? `<img src="${esc(S.me.avatar_url)}" alt="">` : esc(initial(S.me.name || S.me.email)); me.title = S.me.name || S.me.email; }
+  else me.innerHTML = '';
+}
+
+function render() {
+  renderNav();
+  if (!S.ready) return;
+  const m = $('#main');
+  if (S.tab === 'tasks') renderTasks(m);
+  else if (S.tab === 'review') renderReview(m);
+  else renderSettings(m);
+}
+
+/* ---------- ログイン画面 ---------- */
+function renderLogin() {
+  renderNav();
+  const m = $('#main');
+  let body;
+  if (S.authState === 'notmember') {
+    body = `<p>このアカウントはメンバーに登録されていません。<br>オーナーに Settings → メンバー から追加してもらってください。</p>
+            <button class="btn out" id="lo">別のアカウントでログイン</button>`;
+  } else if (S.authState === 'error') {
+    body = `<p>接続に失敗しました。<br><span class="muted">${esc(S.authErr || '')}</span></p>
+            <button class="btn out" id="lo">ログアウト</button>
+            <p style="margin-top:14px"><button class="btn ghost sm" id="reset">接続設定をリセット</button></p>`;
+  } else {
+    body = `<p>二人の時間を、ひとつの場所に。</p>
+            <button class="btn out" id="li">${ICON.google} Google でログイン</button>
+            <p style="margin-top:14px"><button class="btn ghost sm" id="reset">接続設定をリセット</button></p>`;
+  }
+  m.innerHTML = `<div class="login"><div class="card"><div class="lg">TASKDOCK</div>${body}</div></div>`;
+  $('#li') && ($('#li').onclick = () => S.store.signIn().catch(fail));
+  $('#lo') && ($('#lo').onclick = async () => { await S.store.signOut(); location.reload(); });
+  $('#reset') && ($('#reset').onclick = () => { if (confirm('Supabase の接続設定を消してローカルモードに戻しますか？')) { LS.del('supabase'); location.reload(); } });
+}
+
+/* ---------- Tasks ---------- */
+function renderTasks(m) {
+  const today = todayStr();
+  const vis = visibleTasks();
+  const todays = vis.filter(t => t.scheduled_date === today);
+  const done = todays.filter(t => t.status === 'completed');
+  const doneH = done.reduce((a, t) => a + taskHours(t), 0);
+  const planH = todays.reduce((a, t) => a + Number(t.estimated_hours || 0), 0);
+  const base = S.filter === 'shared' ? sharedBaseline() : S.filter === 'mine' ? myBaseline() : myBaseline() + sharedBaseline();
+  const pct = base > 0 ? Math.min(100, Math.round(doneH / base * 100)) : 0;
+
+  // 相手の状況（共有は見えている分から、個人は集計から）
+  const others = S.members.filter(x => x.id !== S.me.id).map(o => {
+    const sh = S.tasks.filter(t => t.visibility === 'shared' && t.scheduled_date === today && (t.assignee_id === o.id || (!t.assignee_id && t.owner_id === o.id)));
+    const pv = S.privateSummary.find(p => p.member_id === o.id);
+    return { o, shCnt: sh.length, shH: sh.reduce((a, t) => a + Number(t.estimated_hours || 0), 0), pvCnt: pv?.cnt || 0, pvH: Number(pv?.hours || 0) };
+  });
+
+  m.innerHTML = `
+  <div class="tasks-grid">
+    <div>
+      <div class="topbar">
+        <div class="seg" id="filter">
+          <button data-f="all" class="${S.filter === 'all' ? 'on' : ''}">全部</button>
+          <button data-f="shared" class="${S.filter === 'shared' ? 'on' : ''}">共有</button>
+          <button data-f="mine" class="${S.filter === 'mine' ? 'on' : ''}">自分</button>
+        </div>
+        ${S.store.mode === 'local' ? `<span class="status warn" title="Settings → 接続 から Supabase につなげます"><i></i>ローカルモード</span>` : ''}
+      </div>
+      <div class="card hero">
+        <div class="d1"><h2>${fmtMD(today)}</h2><span class="muted">基準 ${fmtH(base)}${S.filter === 'all' ? `（自分 ${fmtH(myBaseline())} + 共有 ${fmtH(sharedBaseline())}）` : ''}</span></div>
+        <div class="d2"><span class="big">${fmtH(doneH)}</span><span class="of">/ ${fmtH(base)}</span><span class="of">・</span><span class="pct">${pct}%</span></div>
+        <div class="d3">予定 ${fmtH(planH)} ・ 完了 ${done.length}/${todays.length} 件</div>
+        <div class="bar"><i style="width:${pct}%"></i></div>
+        ${others.length ? `<div class="others">${others.map(x => `<div class="other">${avatar(x.o)}<b>${esc(x.o.name || x.o.email)}</b><span>個人 ${x.pvCnt} 件 ${fmtH(x.pvH)}</span><span>・</span><span>共有 ${x.shCnt} 件 ${fmtH(x.shH)}</span></div>`).join('')}</div>` : ''}
+      </div>
+      ${renderQuickAdd()}
+      <div class="card list" id="list">${renderSections(vis, today)}</div>
+    </div>
+    <div class="card notes" id="notes">${renderNotes()}</div>
+  </div>`;
+
+  $$('#filter button').forEach(b => b.onclick = () => { S.filter = b.dataset.f; LS.set('filter', S.filter); render(); });
+  bindQuickAdd(); bindList(); bindNotes();
+}
+
+function avatar(mem) {
+  if (!mem) return '';
+  return `<span class="av" title="${esc(mem.name || mem.email)}">${mem.avatar_url ? `<img src="${esc(mem.avatar_url)}" alt="">` : esc(initial(mem.name || mem.email))}</span>`;
+}
+
+function renderQuickAdd() {
+  const today = todayStr();
+  return `
+  <div class="card qa">
+    <div class="line">
+      <div class="plus">${ICON.plus}</div>
+      <input class="t" id="qa-title" placeholder="タスクを追加（#居酒屋 2h ! @明日 で指定・Enter で確定）" autocomplete="off">
+      <button class="more" id="qa-more" title="詳細">${ICON.chev}</button>
+      <button class="btn pri" id="qa-add">追加</button>
+    </div>
+    <div class="ext" id="qa-ext">
+      <div class="field"><label>予定日</label><input type="date" id="qa-date" value="${today}"></div>
+      <div class="field"><label>期限日</label><input type="date" id="qa-due"></div>
+      <div class="field"><label>共有 / 個人</label><select id="qa-vis"><option value="private">個人</option><option value="shared">共有</option></select></div>
+      <div class="field"><label>予定時間</label><select id="qa-hrs">${HOURS.map(h => `<option value="${h}" ${h === 1 ? 'selected' : ''}>${fmtH(h)}</option>`).join('')}</select></div>
+      <div class="field"><label>プロジェクト</label><select id="qa-proj"><option value="">なし</option>${S.projects.filter(p => !p.archived).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div>
+      <div class="field"><label>作業種類</label><select id="qa-wt"><option value="">なし</option>${S.workTypes.map(w => `<option value="${w.id}">${esc(w.label)}</option>`).join('')}</select></div>
+      <div class="field"><label>開始時刻</label><input type="time" id="qa-start"></div>
+      <div class="field"><label>重要</label><label class="toggle" id="qa-imp" style="height:34px"><span class="sw"></span><span>！ を付ける</span></label></div>
+      <div class="field"><label>いつかやる</label><label class="toggle" id="qa-someday" style="height:34px"><span class="sw"></span><span>日付を決めない</span></label></div>
+      <div class="hint">入力欄でも指定できます: <b>#居酒屋</b> プロジェクト / <b>2h</b> 予定時間 / <b>!</b> 重要 / <b>@明日</b> <b>@11/20</b> 予定日 / <b>@共有</b></div>
+    </div>
+  </div>`;
+}
+
+function parseQuick(text) {
+  const r = { title: text, hours: null, important: false, date: null, projectId: null, wtId: null, vis: null };
+  const toks = []; const rest = [];
+  for (const w of text.split(/\s+/)) {
+    if (/^(\d+(\.\d+)?)h$/i.test(w)) { r.hours = parseFloat(w); continue; }
+    if (w === '!' || w === '！') { r.important = true; continue; }
+    if (/^[#＃].+/.test(w)) {
+      const n = w.slice(1).toLowerCase();
+      const p = S.projects.find(p => p.name.toLowerCase() === n); const wt = S.workTypes.find(x => x.label.toLowerCase() === n);
+      if (p) { r.projectId = p.id; continue; } if (wt) { r.wtId = wt.id; continue; }
+    }
+    if (/^[@＠].+/.test(w)) {
+      const v = w.slice(1);
+      if (v === '今日') { r.date = todayStr(); continue; }
+      if (v === '明日') { r.date = addDays(todayStr(), 1); continue; }
+      if (v === '明後日') { r.date = addDays(todayStr(), 2); continue; }
+      if (v === 'いつか') { r.date = ''; continue; }
+      if (v === '共有') { r.vis = 'shared'; continue; }
+      if (v === '個人') { r.vis = 'private'; continue; }
+      const md = v.match(/^(\d{1,2})\/(\d{1,2})$/);
+      if (md) { const y = new Date().getFullYear(); let d = `${y}-${pad(md[1])}-${pad(md[2])}`; if (d < todayStr()) d = `${y + 1}-${pad(md[1])}-${pad(md[2])}`; r.date = d; continue; }
+    }
+    rest.push(w);
+  }
+  r.title = rest.join(' ').trim();
+  return r;
+}
+
+function bindQuickAdd() {
+  const title = $('#qa-title'), ext = $('#qa-ext'), more = $('#qa-more');
+  more.onclick = () => { ext.classList.toggle('on'); more.classList.toggle('on'); };
+  const tg = (id) => { const el = $(id); el.onclick = (e) => { e.preventDefault(); el.classList.toggle('on'); }; };
+  tg('#qa-imp'); tg('#qa-someday');
+  const add = async () => {
+    const q = parseQuick(title.value);
+    if (!q.title) { title.focus(); return; }
+    const someday = $('#qa-someday').classList.contains('on') || q.date === '';
+    const vis = q.vis || $('#qa-vis').value;
+    const row = {
+      id: uid(), title: q.title, owner_id: S.me.id, visibility: vis, assignee_id: vis === 'shared' ? S.me.id : null,
+      project_id: q.projectId || $('#qa-proj').value || null, work_type_id: q.wtId || $('#qa-wt').value || null,
+      estimated_hours: q.hours ?? (parseFloat($('#qa-hrs').value) || 1), actual_hours: null, status: 'pending',
+      scheduled_date: someday ? null : (q.date || $('#qa-date').value || todayStr()), due_date: $('#qa-due').value || null,
+      important: q.important || $('#qa-imp').classList.contains('on'), start_time: $('#qa-start').value || null, note: '',
+      sort: Date.now(), carried_over: 0, repeat_rule_id: null, completed_at: null, created_by: S.me.id,
+      created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+    };
+    S.tasks.push(row); title.value = ''; render(); $('#qa-title').focus();
+    try { const saved = await S.store.insert('tasks', row); Object.assign(row, saved); }
+    catch (e) { S.tasks = S.tasks.filter(t => t.id !== row.id); render(); fail(e); }
+  };
+  $('#qa-add').onclick = add;
+  title.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); add(); } };
+}
+
+function renderSections(vis, today) {
+  const sortT = (a, b) => (a.status === b.status ? 0 : a.status === 'completed' ? 1 : -1) || (b.important - a.important) || ((a.start_time || '99') > (b.start_time || '99') ? 1 : (a.start_time || '99') < (b.start_time || '99') ? -1 : 0) || (a.sort - b.sort);
+  const groups = new Map();
+  for (const t of vis) {
+    if (t.scheduled_date && t.scheduled_date < today) continue; // 完了済みの過去分は Review で見る
+    const k = t.scheduled_date || 'someday';
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(t);
+  }
+  const keys = [...groups.keys()].filter(k => k !== 'someday' && k !== today).sort();
+  const sec = (key, label, tasks, isToday) => {
+    const h = tasks.reduce((a, t) => a + Number(t.estimated_hours || 0), 0);
+    const closed = !isToday && S.collapsed[key];
+    return `<div class="sec-h ${isToday ? 'today' : ''} ${closed ? 'closed' : ''}" data-sec="${key}">${isToday ? '' : ICON.chev}<span>${label}</span><span class="n">${tasks.length} 件</span><span class="h">${fmtH(h)}</span></div>
+            <div class="sec-body ${closed ? 'closed' : ''}">${tasks.length ? tasks.sort(sortT).map(renderRow).join('') : `<div class="empty">${isToday ? '今日のタスクはまだありません。上の入力欄から追加してください。' : 'なし'}</div>`}</div>`;
+  };
+  let html = sec(today, '今日', groups.get(today) || [], true);
+  for (const k of keys) {
+    const d = diffDays(today, k);
+    html += sec(k, d === 1 ? `明日 ${fmtMD(k)}` : d === 2 ? `明後日 ${fmtMD(k)}` : fmtMD(k), groups.get(k));
+  }
+  html += sec('someday', '📌 いつかやる', groups.get('someday') || []);
+  return html;
+}
+
+function renderRow(t) {
+  const p = projectById(t.project_id), w = wtById(t.work_type_id);
+  const today = todayStr();
+  let due = '';
+  if (t.due_date && t.status !== 'completed') {
+    const d = diffDays(today, t.due_date);
+    due = d < 0 ? `<span class="due over">${-d} 日超過</span>` : d === 0 ? `<span class="due over">今日まで</span>` : `<span class="due ${d <= 3 ? 'warn' : ''}">あと ${d} 日</span>`;
+  }
+  const owner = memberById(t.assignee_id || t.owner_id);
+  const showAv = t.visibility === 'shared' && S.members.length > 1;
+  return `<div class="row ${t.status === 'completed' ? 'done' : ''}" data-id="${t.id}">
+    <span class="grip">⋮⋮</span>
+    <button class="chk" title="${t.status === 'completed' ? '未完了に戻す' : '完了'}">${ICON.check}</button>
+    ${t.important ? '<span class="imp">!</span>' : ''}
+    <span class="title" title="${esc(t.title)}">${t.start_time ? `<span class="st">${esc(t.start_time.slice(0, 5))}</span>` : ''}${esc(t.title)}</span>
+    <span class="tags">
+      ${t.visibility === 'shared' ? `<span class="chip sh">共有</span>` : ''}
+      ${showAv ? avatar(owner) : ''}
+      ${p ? `<span class="chip pj" style="background:${hex20(p.color)};color:${esc(p.color)}">${esc(p.name)}</span>` : ''}
+      ${w ? `<span class="chip wt" style="background:${hex20(w.color)};color:${esc(w.color)}">${esc(w.label)}</span>` : ''}
+      ${due}
+      ${t.carried_over ? `<span class="carry">持ち越し×${t.carried_over}</span>` : ''}
+    </span>
+    <span class="hrs" title="クリックで変更">${fmtH(taskHours(t))}</span>
+    <button class="del" title="削除">${ICON.x}</button>
+  </div>`;
+}
+
+function bindList() {
+  $$('.sec-h[data-sec]').forEach(h => h.onclick = () => {
+    if (h.classList.contains('today')) return;
+    const k = h.dataset.sec; S.collapsed[k] = !S.collapsed[k]; LS.set('collapsed', S.collapsed);
+    h.classList.toggle('closed'); h.nextElementSibling.classList.toggle('closed');
+  });
+  $$('.row').forEach(row => {
+    const id = row.dataset.id; const t = S.tasks.find(x => x.id === id); if (!t) return;
+    $('.chk', row).onclick = () => toggleDone(t);
+    $('.del', row).onclick = () => removeTask(t);
+    $('.title', row).onclick = () => openTaskModal(t);
+    $('.hrs', row).onclick = (e) => {
+      e.stopPropagation();
+      const cur = taskHours(t);
+      const sel = document.createElement('select'); sel.className = 'hrs-sel';
+      const opts = [...new Set([...HOURS, cur])].sort((a, b) => a - b);
+      sel.innerHTML = opts.map(h => `<option value="${h}" ${h === cur ? 'selected' : ''}>${fmtH(h)}</option>`).join('');
+      e.target.replaceWith(sel); sel.focus();
+      const commit = () => { const v = parseFloat(sel.value); patchTask(t, t.status === 'completed' ? { actual_hours: v } : { estimated_hours: v }); };
+      sel.onchange = commit; sel.onblur = () => render();
+    };
+  });
+}
+
+async function patchTask(t, patch) {
+  Object.assign(t, patch); render();
+  try { await S.store.update('tasks', t.id, patch); } catch (e) { fail(e); reload(false); }
+}
+async function toggleDone(t) {
+  if (t.status === 'completed') return patchTask(t, { status: 'pending', completed_at: null, actual_hours: null });
+  const patch = { status: 'completed', completed_at: new Date().toISOString(), actual_hours: t.actual_hours ?? t.estimated_hours };
+  await patchTask(t, patch);
+  toast(`完了 ・ 実績 ${fmtH(patch.actual_hours)}`, { action: '変更', onAction: () => openTaskModal(t) });
+}
+async function removeTask(t) {
+  const idx = S.tasks.indexOf(t); S.tasks.splice(idx, 1); render();
+  let undone = false;
+  toast('削除しました', { action: '元に戻す', onAction: () => { undone = true; S.tasks.splice(idx, 0, t); render(); } });
+  setTimeout(async () => { if (undone) return; try { await S.store.remove('tasks', t.id); } catch (e) { fail(e); reload(false); } }, 3600);
+}
+
+/* ---------- タスク編集モーダル ---------- */
+function openTaskModal(t) {
+  const shared = t.visibility === 'shared';
+  const done = t.status === 'completed';
+  const body = `
+    <div class="field"><label>タイトル</label><input id="m-title" value="${esc(t.title)}"></div>
+    <div class="grid2">
+      <div class="field"><label>予定日</label><input type="date" id="m-date" value="${t.scheduled_date || ''}"></div>
+      <div class="field"><label>期限日</label><input type="date" id="m-due" value="${t.due_date || ''}"></div>
+      <div class="field"><label>共有 / 個人</label><select id="m-vis"><option value="private" ${!shared ? 'selected' : ''}>個人</option><option value="shared" ${shared ? 'selected' : ''}>共有</option></select></div>
+      <div class="field" id="m-asg-f" ${!shared ? 'style="display:none"' : ''}><label>担当者</label><select id="m-asg"><option value="">未定</option>${S.members.map(m => `<option value="${m.id}" ${t.assignee_id === m.id ? 'selected' : ''}>${esc(m.name || m.email)}</option>`).join('')}</select></div>
+      <div class="field"><label>プロジェクト</label><select id="m-proj"><option value="">なし</option>${S.projects.filter(p => !p.archived || p.id === t.project_id).map(p => `<option value="${p.id}" ${t.project_id === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></div>
+      <div class="field"><label>作業種類</label><select id="m-wt"><option value="">なし</option>${S.workTypes.map(w => `<option value="${w.id}" ${t.work_type_id === w.id ? 'selected' : ''}>${esc(w.label)}</option>`).join('')}</select></div>
+      <div class="field"><label>予定時間</label><select id="m-est">${[...new Set([...HOURS, Number(t.estimated_hours)])].sort((a, b) => a - b).map(h => `<option value="${h}" ${Number(t.estimated_hours) === h ? 'selected' : ''}>${fmtH(h)}</option>`).join('')}</select>${historyHint(t)}</div>
+      <div class="field"><label>実績時間${done ? '' : '（完了時に入る）'}</label><input type="number" id="m-act" step="0.25" min="0" value="${t.actual_hours ?? ''}" placeholder="${done ? '' : '未完了'}"></div>
+      <div class="field"><label>開始時刻</label><input type="time" id="m-start" value="${t.start_time ? t.start_time.slice(0, 5) : ''}"></div>
+      <div class="field"><label>重要</label><label class="toggle ${t.important ? 'on' : ''}" id="m-imp" style="height:34px"><span class="sw"></span><span>！ を付ける</span></label></div>
+    </div>
+    <div class="field"><label>メモ</label><textarea id="m-note">${esc(t.note || '')}</textarea></div>
+    <div class="muted">作成: ${esc(memberById(t.created_by || t.owner_id)?.name || '')} ・ ${t.carried_over ? `持ち越し ${t.carried_over} 回 ・ ` : ''}${done ? '完了済み' : '未完了'}</div>`;
+  openModal('タスク編集', body, [
+    { label: '削除', cls: 'danger', onClick: () => { closeModal(); removeTask(t); } },
+    { spacer: true },
+    { label: 'キャンセル', cls: 'out', onClick: closeModal },
+    { label: '保存', cls: 'pri', onClick: async () => {
+      const vis = $('#m-vis').value;
+      const patch = {
+        title: $('#m-title').value.trim() || t.title, scheduled_date: $('#m-date').value || null, due_date: $('#m-due').value || null,
+        visibility: vis, assignee_id: vis === 'shared' ? ($('#m-asg').value || null) : null,
+        project_id: $('#m-proj').value || null, work_type_id: $('#m-wt').value || null,
+        estimated_hours: parseFloat($('#m-est').value) || 1,
+        actual_hours: $('#m-act').value === '' ? null : parseFloat($('#m-act').value),
+        start_time: $('#m-start').value || null, important: $('#m-imp').classList.contains('on'), note: $('#m-note').value
+      };
+      if (t.status === 'completed' && patch.actual_hours == null) patch.actual_hours = patch.estimated_hours;
+      closeModal(); await patchTask(t, patch);
+    } }
+  ]);
+  $('#m-vis').onchange = e => { $('#m-asg-f').style.display = e.target.value === 'shared' ? '' : 'none'; };
+  $('#m-imp').onclick = e => { e.preventDefault(); $('#m-imp').classList.toggle('on'); };
+  $('#m-title').focus();
+}
+
+function historyHint(t) {
+  const same = S.tasks.filter(x => x.id !== t.id && x.status === 'completed' && x.title.trim() === t.title.trim() && x.actual_hours != null);
+  if (same.length < 1) return '';
+  const avg = same.reduce((a, x) => a + Number(x.actual_hours), 0) / same.length;
+  return `<span class="muted">過去 ${same.length} 件: 平均 ${fmtH(Math.round(avg * 4) / 4)}</span>`;
+}
+
+function openModal(title, body, buttons) {
+  const el = $('#modal');
+  el.innerHTML = `<div class="ov"><div class="mod" role="dialog"><div class="mh"><h2>${esc(title)}</h2><button class="x" id="mx">${ICON.x}</button></div><div class="mb">${body}</div><div class="mf">${buttons.map((b, i) => b.spacer ? '<span class="sp"></span>' : `<button class="btn ${b.cls}" data-i="${i}">${esc(b.label)}</button>`).join('')}</div></div></div>`;
+  $('#mx').onclick = closeModal;
+  $('.ov', el).onclick = e => { if (e.target.classList.contains('ov')) closeModal(); };
+  $$('.mf button', el).forEach(b => b.onclick = buttons[b.dataset.i].onClick);
+  document.onkeydown = e => { if (e.key === 'Escape') closeModal(); };
+}
+function closeModal() { $('#modal').innerHTML = ''; document.onkeydown = null; }
+
+/* ---------- Notes ---------- */
+function renderNotes() {
+  const notes = S.notes.filter(n => n.visibility === 'shared' || n.owner_id === S.me.id);
+  const cards = notes.map(n => {
+    const p = projectById(n.project_id); const open = S.openNote === n.id;
+    const d = new Date(n.updated_at || n.created_at);
+    return `<div class="note ${open ? 'open' : ''}" data-id="${n.id}">
+      <div class="p">${esc(n.content.split('\n')[0]) || '<span class="muted">（空のメモ）</span>'}</div>
+      <div class="ed">
+        <textarea class="nt">${esc(n.content)}</textarea>
+        <div class="r"><select class="np"><option value="">プロジェクトなし</option>${S.projects.filter(x => !x.archived).map(x => `<option value="${x.id}" ${n.project_id === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
+        <select class="nv"><option value="private" ${n.visibility !== 'shared' ? 'selected' : ''}>個人</option><option value="shared" ${n.visibility === 'shared' ? 'selected' : ''}>共有</option></select></div>
+        <div class="r"><button class="btn danger sm nd">削除</button><span style="flex:1"></span><button class="btn out sm nc">閉じる</button><button class="btn pri sm ns">保存</button></div>
+      </div>
+      <div class="m">${n.visibility === 'shared' ? '<span class="chip sh">共有</span>' : ''}${p ? `<span class="chip" style="background:${hex20(p.color)};color:${esc(p.color)}">${esc(p.name)}</span>` : ''}<span>${d.getMonth() + 1}/${d.getDate()}</span>${S.members.length > 1 && n.owner_id !== S.me.id ? avatar(memberById(n.owner_id)) : ''}</div>
+    </div>`;
+  }).join('');
+  return `<h3>Notes <span class="cnt">${notes.length} 件</span></h3>
+    <div class="add">
+      <textarea id="n-content" placeholder="メモを追加..." rows="2"></textarea>
+      <div class="r">
+        <select id="n-proj"><option value="">プロジェクト</option>${S.projects.filter(x => !x.archived).map(x => `<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select>
+        <select id="n-vis" style="width:84px;flex:none"><option value="private">個人</option><option value="shared">共有</option></select>
+        <button class="btn pri" id="n-add">投稿</button>
+      </div>
+    </div>
+    <div>${cards || '<div class="empty">メモはまだありません</div>'}</div>`;
+}
+
+function bindNotes() {
+  $('#n-add').onclick = async () => {
+    const c = $('#n-content').value.trim(); if (!c) return;
+    const row = { id: uid(), owner_id: S.me.id, visibility: $('#n-vis').value, project_id: $('#n-proj').value || null, content: c, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+    S.notes.unshift(row); render();
+    try { Object.assign(row, await S.store.insert('notes', row)); } catch (e) { S.notes = S.notes.filter(n => n.id !== row.id); render(); fail(e); }
+  };
+  $('#n-content').onkeydown = e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) $('#n-add').click(); };
+  $$('.note').forEach(card => {
+    const id = card.dataset.id; const n = S.notes.find(x => x.id === id);
+    card.onclick = e => { if (card.classList.contains('open')) return; S.openNote = id; render(); $(`.note[data-id="${id}"] textarea`)?.focus(); };
+    const close = () => { S.openNote = null; render(); };
+    $('.nc', card).onclick = e => { e.stopPropagation(); close(); };
+    $('.nt', card).onkeydown = e => { if (e.key === 'Escape') close(); };
+    $('.ns', card).onclick = async e => {
+      e.stopPropagation();
+      const patch = { content: $('.nt', card).value, project_id: $('.np', card).value || null, visibility: $('.nv', card).value, updated_at: new Date().toISOString() };
+      Object.assign(n, patch); S.openNote = null; render();
+      try { await S.store.update('notes', n.id, patch); } catch (err) { fail(err); reload(false); }
+    };
+    $('.nd', card).onclick = async e => {
+      e.stopPropagation(); if (!confirm('このメモを削除しますか？')) return;
+      S.notes = S.notes.filter(x => x.id !== n.id); S.openNote = null; render();
+      try { await S.store.remove('notes', n.id); } catch (err) { fail(err); reload(false); }
+    };
+  });
+}
+
+/* ---------- Review (Phase 2) ---------- */
+function renderReview(m) {
+  const today = todayStr();
+  const mine = S.tasks.filter(t => (t.visibility === 'shared' || t.owner_id === S.me.id) && t.status === 'completed');
+  const wk = []; for (let i = 6; i >= 0; i--) { const d = addDays(today, -i); const h = mine.filter(t => t.scheduled_date === d).reduce((a, t) => a + taskHours(t), 0); wk.push([d, h]); }
+  const max = Math.max(1, ...wk.map(x => x[1]));
+  m.innerHTML = `
+    <div class="card">
+      <h3>直近 7 日の実績時間 <span class="cnt">合計 ${fmtH(wk.reduce((a, x) => a + x[1], 0))}</span></h3>
+      <div style="display:flex;gap:8px;align-items:flex-end;height:120px;padding-top:8px">
+        ${wk.map(([d, h]) => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end"><span class="muted" style="font-size:10px">${fmtH(h)}</span><div style="width:100%;max-width:40px;background:${d === today ? 'var(--ink)' : 'var(--gray-300)'};border-radius:4px;height:${Math.max(3, h / max * 80)}px"></div><span class="muted" style="font-size:10px">${fromYMD(d).getDate()}${WD[fromYMD(d).getDay()]}</span></div>`).join('')}
+      </div>
+    </div>
+    <div class="card placeholder">
+      <b>Review タブは Phase 2 で作ります</b>
+      <ul><li>月カレンダー（実績時間・完了数）</li><li>日ごとの一覧と振り返りメモ</li><li>プロジェクトカードとリザルト（時給）</li><li>朝の振り返りモーダル・繰り返しタスク</li></ul>
+    </div>`;
+}
+
+/* ---------- Settings ---------- */
+function renderSettings(m) {
+  const sup = S.store.mode === 'supabase';
+  const vt = S.tasks.filter(t => t.visibility === 'shared' || t.owner_id === S.me.id);
+  m.innerHTML = `
+  <div class="card">
+    <h3>接続 <span class="cnt"><span class="status ${sup ? 'ok' : 'warn'}"><i></i>${sup ? `接続済み ・ ${esc(S.me.email)}` : 'ローカルモード（この端末だけ）'}</span></span></h3>
+    <p class="muted" style="margin:0 0 10px">Supabase につなぐと、二人で同じデータを見られて iPhone からも使えます。手順は SETUP.md を参照。</p>
+    <div class="grid2">
+      <div class="field"><label>Project URL</label><input id="c-url" placeholder="https://xxxx.supabase.co" value="${esc(CFG.url)}"></div>
+      <div class="field"><label>anon public key</label><input id="c-key" placeholder="eyJ..." value="${esc(CFG.key)}"></div>
+    </div>
+    <div class="row-actions" style="margin-top:10px">
+      <button class="btn pri" id="c-save">保存して再読み込み</button>
+      ${sup ? `<button class="btn out" id="c-logout">ログアウト</button>` : ''}
+      ${CFG.url ? `<button class="btn ghost" id="c-clear">接続を解除</button>` : ''}
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>自分の設定</h3>
+    <div class="grid2">
+      <div class="field"><label>表示名</label><input id="s-name" value="${esc(S.me.name || '')}" placeholder="名前"></div>
+      <div></div>
+      <div class="field"><label>平日の基準時間</label><select id="s-wd">${[0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10].map(h => `<option value="${h}" ${Number(S.me.weekday_hours) === h ? 'selected' : ''}>${fmtH(h)}</option>`).join('')}</select></div>
+      <div class="field"><label>休日の基準時間</label><select id="s-we">${[0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10].map(h => `<option value="${h}" ${Number(S.me.weekend_hours) === h ? 'selected' : ''}>${fmtH(h)}</option>`).join('')}</select></div>
+    </div>
+    <p class="muted" style="margin:8px 0 0">Hero の分母になる、1 日にこの仕事へ使える時間です。人によって違うので各自で設定します。</p>
+  </div>
+
+  <div class="card">
+    <h3>共有の設定</h3>
+    <div class="grid2">
+      <div class="field"><label>共有タスクの基準時間（1 日あたり）</label><select id="s-sh">${[0, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6].map(h => `<option value="${h}" ${sharedBaseline() === h ? 'selected' : ''}>${fmtH(h)}</option>`).join('')}</select></div>
+    </div>
+    <p class="muted" style="margin:8px 0 0">全員が共有タスクに持ち寄る時間。自分の基準時間に足されます。</p>
+  </div>
+
+  <div class="card">
+    <h3>メンバー <span class="cnt">${S.members.length} 人</span></h3>
+    <div class="set-list">${S.members.map(x => `<div class="set-item">${avatar(x)}<span class="nm">${esc(x.name || '（未ログイン）')} <span class="sub">${esc(x.email)}${x.role === 'owner' ? ' ・ オーナー' : ''}${!x.user_id && sup ? ' ・ 招待中' : ''}</span></span>${isOwner() && x.id !== S.me.id ? `<button class="x" data-del-member="${x.id}" title="外す">${ICON.x}</button>` : ''}</div>`).join('')}</div>
+    ${sup ? (isOwner() ? `<div class="set-add"><input type="email" id="mb-email" placeholder="追加する人の Gmail"><button class="btn pri" id="mb-add">追加</button></div><p class="muted" style="margin:8px 0 0">追加した人がその Gmail で Google ログインすると、自動でメンバーになります。</p>` : `<p class="muted" style="margin:8px 0 0">メンバーの追加はオーナーだけができます。</p>`) : `<p class="muted" style="margin:8px 0 0">メンバーを増やすには Supabase に接続してください。</p>`}
+  </div>
+
+  <div class="card">
+    <h3>プロジェクト <span class="cnt">${S.projects.length}</span></h3>
+    <div class="set-list" id="pj-list">${S.projects.map(p => `<div class="set-item ${p.archived ? 'muted' : ''}"><input type="color" value="${esc(p.color)}" data-pc="${p.id}" style="width:22px;height:22px;padding:1px;border-radius:50%"><span class="nm">${esc(p.name)}${p.archived ? ' <span class="sub">（アーカイブ）</span>' : ''}</span><button class="btn ghost sm" data-pa="${p.id}">${p.archived ? '戻す' : 'アーカイブ'}</button><button class="x" data-pd="${p.id}" title="削除">${ICON.x}</button></div>`).join('')}</div>
+    <div class="set-add"><input type="text" id="pj-name" placeholder="新しいプロジェクト名"><input type="color" id="pj-color" value="#787672"><button class="btn pri" id="pj-add">追加</button></div>
+  </div>
+
+  <div class="card">
+    <h3>作業種類 <span class="cnt">${S.workTypes.length}</span></h3>
+    <div class="set-list">${S.workTypes.map(w => `<div class="set-item"><input type="color" value="${esc(w.color)}" data-wc="${w.id}" style="width:22px;height:22px;padding:1px;border-radius:50%"><span class="nm">${esc(w.label)}</span><button class="x" data-wd="${w.id}" title="削除">${ICON.x}</button></div>`).join('')}</div>
+    <div class="set-add"><input type="text" id="wt-name" placeholder="新しい作業種類"><input type="color" id="wt-color" value="#787672"><button class="btn pri" id="wt-add">追加</button></div>
+  </div>
+
+  <div class="card">
+    <h3>データ</h3>
+    <div class="stat"><div><b>${vt.length}</b>タスク</div><div><b>${vt.filter(t => t.status === 'completed').length}</b>完了</div><div><b>${S.projects.length}</b>プロジェクト</div><div><b>${S.notes.filter(n => n.visibility === 'shared' || n.owner_id === S.me.id).length}</b>メモ</div></div>
+    <div class="row-actions"><button class="btn out" id="d-export">JSON でエクスポート</button>${(!sup || isOwner()) ? `<button class="btn danger" id="d-clear">タスクとメモを全削除</button>` : ''}</div>
+  </div>`;
+
+  // 接続
+  $('#c-save').onclick = () => { LS.set('supabase', { url: $('#c-url').value.trim(), key: $('#c-key').value.trim() }); location.reload(); };
+  $('#c-logout') && ($('#c-logout').onclick = async () => { await S.store.signOut(); location.reload(); });
+  $('#c-clear') && ($('#c-clear').onclick = () => { if (confirm('接続を解除してローカルモードに戻しますか？（Supabase 側のデータは消えません）')) { LS.del('supabase'); location.reload(); } });
+
+  // 自分
+  const saveMe = debounce(async () => {
+    const patch = { name: $('#s-name').value.trim(), weekday_hours: parseFloat($('#s-wd').value), weekend_hours: parseFloat($('#s-we').value) };
+    Object.assign(S.me, patch); const mm = memberById(S.me.id); mm && Object.assign(mm, patch); renderNav();
+    try { await S.store.update('members', S.me.id, patch); toast('保存しました', { ms: 1500 }); } catch (e) { fail(e); }
+  }, 400);
+  ['#s-name', '#s-wd', '#s-we'].forEach(s => $(s).oninput = saveMe);
+  $('#s-sh').onchange = async () => { const v = parseFloat($('#s-sh').value); S.settings.shared_daily_hours = v; try { await S.store.setSetting('shared_daily_hours', v); toast('保存しました', { ms: 1500 }); } catch (e) { fail(e); } };
+
+  // メンバー
+  $('#mb-add') && ($('#mb-add').onclick = async () => {
+    const em = $('#mb-email').value.trim().toLowerCase(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { toast('メールアドレスを確認してください', { err: true }); return; }
+    try { const row = await S.store.insert('members', { email: em, name: '', role: 'member', weekday_hours: 2.5, weekend_hours: 6 }); S.members.push(row); render(); toast('追加しました。相手が Google ログインすると有効になります'); } catch (e) { fail(e); }
+  });
+  $$('[data-del-member]').forEach(b => b.onclick = async () => {
+    const x = memberById(b.dataset.delMember); if (!confirm(`${x.name || x.email} をメンバーから外しますか？`)) return;
+    try { await S.store.remove('members', x.id); S.members = S.members.filter(y => y.id !== x.id); render(); } catch (e) { fail(e); }
+  });
+
+  // プロジェクト
+  $('#pj-add').onclick = async () => {
+    const name = $('#pj-name').value.trim(); if (!name) return;
+    const row = { id: uid(), name, color: $('#pj-color').value, sort: S.projects.length, archived: false, created_at: new Date().toISOString() };
+    try { S.projects.push(await S.store.insert('projects', row)); render(); } catch (e) { fail(e); }
+  };
+  $('#pj-name').onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) $('#pj-add').click(); };
+  $$('[data-pc]').forEach(i => i.onchange = async () => { const p = projectById(i.dataset.pc); p.color = i.value; try { await S.store.update('projects', p.id, { color: p.color }); } catch (e) { fail(e); } });
+  $$('[data-pa]').forEach(b => b.onclick = async () => { const p = projectById(b.dataset.pa); p.archived = !p.archived; render(); try { await S.store.update('projects', p.id, { archived: p.archived }); } catch (e) { fail(e); } });
+  $$('[data-pd]').forEach(b => b.onclick = async () => {
+    const p = projectById(b.dataset.pd); const n = S.tasks.filter(t => t.project_id === p.id).length;
+    if (!confirm(`「${p.name}」を削除しますか？${n ? `\n${n} 件のタスクからプロジェクトが外れます。` : ''}`)) return;
+    S.projects = S.projects.filter(x => x.id !== p.id); S.tasks.forEach(t => { if (t.project_id === p.id) t.project_id = null; }); render();
+    try { await S.store.remove('projects', p.id); } catch (e) { fail(e); reload(false); }
+  });
+
+  // 作業種類
+  $('#wt-add').onclick = async () => {
+    const label = $('#wt-name').value.trim(); if (!label) return;
+    const row = { id: uid(), label, color: $('#wt-color').value, sort: S.workTypes.length, created_at: new Date().toISOString() };
+    try { S.workTypes.push(await S.store.insert('work_types', row)); render(); } catch (e) { fail(e); }
+  };
+  $('#wt-name').onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) $('#wt-add').click(); };
+  $$('[data-wc]').forEach(i => i.onchange = async () => { const w = wtById(i.dataset.wc); w.color = i.value; try { await S.store.update('work_types', w.id, { color: w.color }); } catch (e) { fail(e); } });
+  $$('[data-wd]').forEach(b => b.onclick = async () => {
+    const w = wtById(b.dataset.wd); if (!confirm(`「${w.label}」を削除しますか？`)) return;
+    S.workTypes = S.workTypes.filter(x => x.id !== w.id); S.tasks.forEach(t => { if (t.work_type_id === w.id) t.work_type_id = null; }); render();
+    try { await S.store.remove('work_types', w.id); } catch (e) { fail(e); reload(false); }
+  });
+
+  // データ
+  $('#d-export').onclick = () => {
+    const data = { exported_at: new Date().toISOString(), me: S.me, members: S.members, projects: S.projects, work_types: S.workTypes, settings: S.settings, tasks: vt, notes: S.notes };
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })); a.download = `taskdock-${todayStr()}.json`; a.click();
+  };
+  $('#d-clear') && ($('#d-clear').onclick = async () => {
+    if (!confirm('タスクとメモをすべて削除します。元に戻せません。よろしいですか？')) return;
+    if (!confirm('本当に削除しますか？')) return;
+    try { await S.store.clearAll(); if (S.store.mode === 'local') { location.reload(); return; } S.tasks = []; S.notes = []; render(); toast('削除しました'); } catch (e) { fail(e); }
+  });
+}
+
+/* ---------- 開発用 ---------- */
+window.taskdock = { state: S, reload: () => reload(false) };
+
+boot();
+</script>
+</body>
+</html>
